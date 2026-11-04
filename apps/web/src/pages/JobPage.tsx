@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
+  ArrowLeft,
   CheckCircle2,
   Circle,
   Copy,
@@ -101,8 +102,16 @@ export function JobPage() {
                 <XCircle className="h-4 w-4" /> Cancel
               </Button>
             )}
-            <Link to="/">
-              <Button variant="ghost">New post</Button>
+            <Link
+              to="/"
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
+                isTerminal(j.status)
+                  ? 'bg-brand-600 text-white hover:bg-brand-700'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {isTerminal(j.status) ? 'Create another post' : 'Back to create'}
             </Link>
           </div>
         </Card>
