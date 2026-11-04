@@ -2,6 +2,26 @@
 
 > **Revision 2:** simplified after a design review. Redis/BullMQ replaced by pg-boss, API and worker merged into one backend codebase, polling instead of SSE, local storage behind an interface, mock content generator as the default, image upload promoted to P0, deployment deferred (ADR-002). See §16 for what changed and why.
 
+## Implementation status (2026-11-04)
+
+This document is the design and plan. What is actually built today:
+
+| Area | Status |
+|---|---|
+| URL input → scrape → script → render → verify → preview/download | ✅ Built and tested end to end |
+| All 6 formats (Reel, Story, TikTok, Short as MP4; Feed post, YouTube thumbnail as PNG) | ✅ Built; every output verified with ffprobe/sharp |
+| Job queue, checkpoints, retries, cancel, crash recovery, stalled-job sweeper | ✅ Built and tested (incl. `kill -9` of the worker mid-render) |
+| SSRF guard, signed file URLs, session scoping, rate limits | ✅ Built; unit tested |
+| Docker image + full `docker compose up` | ✅ Built and tested |
+| Content provider | ⚠️ Mock only (simulated). Claude provider not built yet |
+| Image upload, video upload | ❌ Not built yet |
+| Review/edit script before render | ⚠️ Backend pause exists; API routes and UI not built |
+| Artifact cleanup after 7 days | ❌ Not built (files are kept) |
+| ESLint, GitHub Actions CI, Playwright E2E | ❌ Not built (Vitest + `tsc` only) |
+| Hosted deployment | ⏸ Deferred (ADR-002) |
+
+See [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) for real vs simulated, known issues and next steps.
+
 ## 0. How I read the brief
 
 The evaluators say it outright: *"We are not looking for the maximum number of features."* They are grading:
@@ -193,11 +213,11 @@ export const FORMATS = {
 ## 6. API surface
 
 ```
-POST  /api/uploads              → multipart upload (streamed, size-capped, magic-byte checked) → { assetId }
+POST  /api/uploads              → (planned) multipart upload (streamed, size-capped, magic-byte checked) → { assetId }
 POST  /api/jobs                 → 202 { jobId }   body: { inputType, url|assetId, platform, formatId, options }
 GET   /api/jobs/:id             → job + events + script + outputs (signed URLs)   ← polled by the UI
-PATCH /api/jobs/:id/script      → edit script (only while awaiting_review)
-POST  /api/jobs/:id/render      → resume after review
+PATCH /api/jobs/:id/script      → (planned) edit script (only while awaiting_review)
+POST  /api/jobs/:id/render      → (planned) resume after review
 POST  /api/jobs/:id/retry       → retry failed job from last good step
 POST  /api/jobs/:id/cancel
 GET   /api/files/:key?exp&sig   → signed, expiring download/preview (supports Range for video seeking)
@@ -214,11 +234,11 @@ All request and response bodies are Zod-validated. An **Idempotency-Key** header
 | Risk | Mitigation |
 |---|---|
 | **SSRF via product URL** | http/https only; resolve DNS and **block private, loopback, link-local and metadata IPs** (169.254.169.254, IPv6 equivalents, decimal/octal-encoded IPs), re-checked on every redirect (stops DNS rebinding); max 3 redirects; 15s timeout; 5MB HTML cap. Image downloads go through the same guard |
-| **Malicious uploads** | Streamed multipart with hard size limits (image 15MB, video 100MB); server verifies **magic bytes** (not the client's MIME type) and probes with sharp/ffprobe; outputs are always re-encoded; random storage keys, never user-supplied filenames |
+| **Malicious uploads** (uploads planned; the same image checks already run on scraped images) | Streamed multipart with hard size limits (image 15MB, video 100MB); server verifies **magic bytes** (not the client's MIME type) and probes with sharp/ffprobe; outputs are always re-encoded; random storage keys, never user-supplied filenames |
 | **FFmpeg as attack surface** | Fixed argument arrays via `spawn` (no shell), `-protocol_whitelist file`, per-render timeout, worker runs as non-root in its container |
 | **Prompt injection from scraped pages** | Scraped content is delimited and treated as data; output is schema-validated; the model gets no tools or actions |
 | **Abuse / cost** | Anonymous signed session cookie owns jobs; **rate limits** per session and IP; max concurrent jobs per session |
-| **Data access** | Jobs and assets scoped to their session; files only reachable through **HMAC-signed, expiring URLs**; artifacts cleaned up after 7 days |
+| **Data access** | Jobs and assets scoped to their session; files only reachable through **HMAC-signed, expiring URLs**; artifact cleanup after 7 days is planned (not built) |
 | **Secrets** | Env vars only, validated at boot with Zod; `.env.example` committed, `.env` git-ignored; nothing sensitive in the client bundle |
 | **Web basics** | Helmet security headers/CSP, CORS locked to the app origin, generic error messages to the client with details in the logs |
 
@@ -281,8 +301,8 @@ Local dev: `docker compose up -d postgres`, then `npm run dev` (API, worker and 
 
 - **Unit:** format registry and safe-zone math, scraper parsers (fixture HTML from 3–4 real shops), **SSRF guard** (private IPs, redirects, IPv6, encoded IPs), state machine transitions, provider output validation and repair, URL signing.
 - **Integration:** worker pipeline with MockProvider on a fixture image produces an MP4. **ffprobe asserts width, height, duration and codec** per format.
-- **E2E (optional):** one Playwright happy path: submit URL, see progress, preview, download.
-- Tooling: Vitest, ESLint, Prettier, `tsc --noEmit`. A GitHub Actions workflow runs lint, typecheck and tests.
+- **E2E (planned, optional):** one Playwright happy path: submit URL, see progress, preview, download.
+- Tooling today: Vitest, Prettier, `tsc --noEmit`. Planned: ESLint and a GitHub Actions workflow running typecheck and tests.
 
 ---
 
