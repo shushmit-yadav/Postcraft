@@ -79,6 +79,13 @@ The evaluators say it outright: *"We are not looking for the maximum number of f
   3. **Not hosted:** strong README, one-command setup, demo video, and an explicit note in the implementation notes on why it isn't hosted and how it would deploy.
 - **Risk if we stay on option 3:** reviewers checking against the deliverables list may mark down "live URL" and "production deployment". This is mitigated by the deploy-ready setup and by stating it openly.
 
+### ADR-003: Honest scraper identity; blocked sites fall back to image upload
+
+- **Context:** many large stores (and Shopify's bot protection) refuse automated requests with 403/429. A common workaround is to fake a desktop browser's User-Agent or use headless browsers to get past bot checks.
+- **Decision:** the scraper identifies itself honestly (`PostcraftBot/0.1; product link preview`), like link-preview bots do. When a site refuses, the job fails fast with `SITE_BLOCKED` and tells the user to upload a product image instead.
+- **Why:** circumventing a site's bot protection is a legal and ethical risk for a real product, and it is an arms race we would lose anyway. The image-upload path (P0) gives a reliable alternative that needs no scraping at all.
+- **Evolution:** official integrations for scale (e.g. Shopify Storefront API, merchant-provided product feeds), where access is granted rather than taken.
+
 ### Tech choices (and why)
 
 | Concern | Choice | Rationale / alternative considered |
