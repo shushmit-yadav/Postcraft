@@ -6,8 +6,8 @@ import { logger } from '../lib/logger.js';
 
 const MIGRATION_LOCK_ID = 727_001;
 const here = path.dirname(fileURLToPath(import.meta.url));
-/** Works from src/db (tsx) and from dist (bundled), where migrations are copied next to the bundle. */
-const candidates = [path.resolve(here, '../../drizzle'), path.resolve(here, './drizzle')];
+/** src/db (tsx) → apps/backend/drizzle; dist/ (bundled) → apps/backend/drizzle too. */
+const candidates = [path.resolve(here, '../../drizzle'), path.resolve(here, '../drizzle')];
 
 /**
  * Applies pending migrations. Guarded by a Postgres advisory lock so the API
