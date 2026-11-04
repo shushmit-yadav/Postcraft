@@ -55,11 +55,12 @@ export function cardZone(format: OutputFormat, layers: Layer[]): CardZone {
   const bottoms = layers.map((l) => l.bottomEdge).filter((v): v is number => v !== null);
   const top = (tops.length ? Math.max(...tops) : box.y) + GAP;
   const bottom = (bottoms.length ? Math.min(...bottoms) : box.y + box.height) - GAP;
-  // Never let the card collapse: keep at least 35% of the frame for the product.
-  const minH = format.height * 0.35;
-  if (bottom - top < minH) {
+  // A smaller card beats a card under text, so the zone is never widened into the text.
+  // Only a degenerate zone (text filling the frame) gets a minimal card centered in the gap.
+  const MIN_CARD = 160;
+  if (bottom - top < MIN_CARD) {
     const mid = (top + bottom) / 2;
-    return { top: mid - minH / 2, bottom: mid + minH / 2 };
+    return { top: mid - MIN_CARD / 2, bottom: mid + MIN_CARD / 2 };
   }
   return { top, bottom };
 }
