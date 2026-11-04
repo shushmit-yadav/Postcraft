@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+data/
+*.log
+coverage/
+.DS_Store
+.vite/
+
+# Personal files and the confidential assessment brief: never commit
+*.pdf
