@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Circle,
   Copy,
-  Download,
   Loader2,
   RotateCcw,
   XCircle,
@@ -14,6 +13,7 @@ import {
 import { FORMATS, JOB_STEPS, STEP_PROGRESS, isTerminal, type JobStep, type JobView } from '@app/shared';
 import { api, ApiError } from '../lib/api';
 import { Button, Card, SectionTitle } from '../components/ui';
+import { Preview } from '../components/Preview';
 
 const STEP_LABELS: Record<JobStep, string> = {
   ingesting: 'Fetching product',
@@ -189,25 +189,14 @@ function StepTimeline({ job }: { job: JobView }) {
 }
 
 function Outputs({ job }: { job: JobView }) {
+  const format = FORMATS[job.formatId];
+  const main = job.outputs.find((o) => o.kind === 'output_video' || o.kind === 'output_image');
+  const poster = job.outputs.find((o) => o.kind === 'thumbnail');
+  if (!main) return null;
   return (
     <Card>
       <SectionTitle>Result</SectionTitle>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {job.outputs.map((o) => (
-          <figure key={o.id} className="grid gap-2">
-            {o.mime.startsWith('video/') ? (
-              <video src={o.url} controls playsInline className="w-full rounded-xl bg-black" />
-            ) : (
-              <img src={o.url} alt="Generated post" className="w-full rounded-xl border" />
-            )}
-            <a href={o.downloadUrl} download>
-              <Button variant="secondary" className="w-full">
-                <Download className="h-4 w-4" /> Download {o.width}×{o.height}
-              </Button>
-            </a>
-          </figure>
-        ))}
-      </div>
+      <Preview format={format} output={main} poster={poster} />
     </Card>
   );
 }

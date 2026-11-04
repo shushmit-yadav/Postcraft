@@ -28,6 +28,12 @@ const INPUT_TABS: { id: InputType; label: string; icon: typeof Link2; available:
 
 const TONES: Tone[] = ['energetic', 'friendly', 'premium', 'playful'];
 
+/** Pages known to allow automated access, for one-click trials (many big stores block bots). */
+const EXAMPLE_URLS = [
+  { label: 'Beard oil (Shopify store)', url: 'https://www.beardbrand.com/products/tea-tree-beard-oil' },
+  { label: 'Book (demo shop)', url: 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html' },
+];
+
 export function CreatePage() {
   const navigate = useNavigate();
   const [inputType, setInputType] = useState<InputType>('url');
@@ -122,6 +128,19 @@ export function CreatePage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               />
               {urlError && <p className="mt-1 text-sm text-red-600">{urlError}</p>}
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                Try an example:
+                {EXAMPLE_URLS.map((e) => (
+                  <button
+                    key={e.url}
+                    type="button"
+                    onClick={() => setUrl(e.url)}
+                    className="rounded-full border border-slate-200 px-2 py-0.5 text-slate-700 hover:bg-slate-50"
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </Card>
