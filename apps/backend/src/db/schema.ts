@@ -38,6 +38,7 @@ export interface ProductData {
   brand?: string;
   price?: string;
   currency?: string;
+  category?: string;
   sourceUrl?: string;
   /** Asset ids of the product images saved to storage, best first. */
   imageAssetIds: string[];
