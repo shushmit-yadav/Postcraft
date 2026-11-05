@@ -1,0 +1,17 @@
+// GitHub Codespaces / Dev Containers: builds and starts the full stack (docker compose) automatically.
+// The app is on port 8080. To share it, set the port's visibility to Public (Ports tab).
+{
+  "name": "Postcraft",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "postCreateCommand": "bash .devcontainer/setup-env.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "Postcraft", "onAutoForward": "openBrowser" },
+    "5432": { "onAutoForward": "ignore" }
+  }
+}
