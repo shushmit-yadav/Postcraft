@@ -14,7 +14,7 @@ This document is the design and plan. What is actually built today:
 | Job queue, checkpoints, retries, cancel, crash recovery, stalled-job sweeper | ✅ Built and tested (incl. `kill -9` of the worker mid-render) |
 | SSRF guard, signed file URLs, session scoping, rate limits | ✅ Built; unit tested |
 | Docker image + full `docker compose up` | ✅ Built and tested |
-| Content provider | ⚠️ Mock only (simulated). Claude provider not built yet |
+| Content provider | ✅ Claude provider built (vision + structured output), unit-tested with a stubbed client; ⚠️ not yet run live. Mock used when no key is set |
 | Video upload | ❌ Not built yet |
 | Review/edit script before render | ⚠️ Backend pause exists; API routes and UI not built |
 | Artifact cleanup after 7 days | ❌ Not built (files are kept) |

@@ -9,7 +9,7 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | Product URL fetch and parsing | **Real** | JSON-LD → microdata → OpenGraph → HTML. Tested on a Shopify store (beardbrand.com) and scrape-friendly demo shops |
 | SSRF protection | **Real** | DNS-time IP checks, redirects re-validated, size and time limits. Unit tested, and tried against metadata IPs, `nip.io` names, IPv4-mapped IPv6 and decimal IPs |
 | Image download and validation | **Real** | Magic-byte sniffing, 300px minimum, decompression-bomb limit, re-encode |
-| Product analysis and script/caption | **Simulated** | `MockProvider` builds hook, scenes, CTA, caption and hashtags deterministically from the scraped text and the chosen tone. No model is called. The UI labels it "Mock (simulated)" |
+| Product analysis and script/caption | **Real with Claude, simulated without a key** | With `ANTHROPIC_API_KEY` set: `ClaudeProvider` (`claude-opus-5-5`) analyzes up to 3 product images with vision, then writes the script as structured JSON, validated against `ScriptSchema`. Unit-tested against a stubbed client; **not yet run against the live API** (no key was available while building). Without a key: `MockProvider` builds the copy deterministically from the product text. The UI badge says which one ran |
 | Video rendering (MP4) | **Real** | sharp + FFmpeg. Text inside platform safe zones, crossfades, H.264/AAC, faststart |
 | Image rendering (PNG) | **Real** | Same layout engine, exact format size |
 | Format verification | **Real** | Every output is checked with ffprobe/sharp (size, codec, pixel format, duration) before the job completes |
@@ -23,6 +23,7 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 
 ## Known issues
 
+- **Live Claude calls are untested.** The provider's request shape, output validation and error mapping are covered by tests with a stubbed client; the first real run needs an API key.
 - **Generic copy from the mock.** Pages without short description sentences get generic scene lines ("Built for every day"), and category guessing is keyword-based ("product" when unsure). A real model is the fix.
 - **Many large stores block the scraper** with 403/429 (bot protection). That is intentional (ADR-003): the app reports `SITE_BLOCKED`, does not get around the block, and points the user to image upload.
 - **Text width is estimated, not measured.** The layout uses an average glyph width for DejaVu Sans Bold. Text with many wide letters can come out slightly wider than planned; panels have padding to absorb it. Emoji and non-Latin scripts are not supported in the rendered overlays (captions may still contain emoji).
@@ -46,15 +47,16 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | One image, API and worker as two processes | Separate services | Same code and dependencies; scale the worker independently by running more of it |
 | Gradient background from the photo's dominant color | Blurred photo fill | Most product photos have white backgrounds, which blur into flat grey |
 | Honest bot user agent | Spoofing a browser | Avoids the legal/ethical risk and an arms race; upload is the reliable path (ADR-003) |
-| Mock provider as the default | Requiring an API key | Anyone can clone and run it; the demo can't fail because of an outside service |
+| Mock provider when no key is set | Requiring an API key | Anyone can clone and run it; the demo can't fail because of an outside service |
+| Fail and retry when Claude is down | Silently falling back to the mock | Generic copy presented as AI output would mislead; a visible retry/failure is honest |
+| Two Claude calls (analyze with vision, then script) | One combined call | Each step keeps its own checkpoint, so a failed script call doesn't redo the image analysis |
 | Anonymous sessions | Accounts | Zero-friction review. Accounts are on the roadmap |
 
 ## What I would improve next (in order)
 
-1. **Claude content provider** (vision + structured JSON validated by the existing `ScriptSchema`), with the mock kept as the fallback when the key is missing or the API is down.
-2. **Review step UI:** edit hook, scenes and CTA, then render. The pause already exists in the runner.
-3. **Retention job** that deletes files and rows after 7 days.
-4. **Video upload:** trim, reframe to 9:16, burn in captions.
+1. **Review step UI:** edit hook, scenes and CTA, then render. The pause already exists in the runner.
+2. **Retention job** that deletes files and rows after 7 days.
+3. **Video upload:** trim, reframe to 9:16, burn in captions.
 
 ## How the product could evolve
 

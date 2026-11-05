@@ -16,7 +16,7 @@ docker compose up --build     # first build takes ~4 minutes
 
 Open **http://localhost:8080**, click one of the example URLs, and press **Generate**.
 
-No API keys are needed. Without `ANTHROPIC_API_KEY` the app uses a built-in mock content generator, and the UI says so ("AI: Mock (simulated)").
+No API keys are needed. Without `ANTHROPIC_API_KEY` the app uses a built-in mock content generator, and the UI says so ("AI: Mock (simulated)"). Add a key to `.env` to switch to Claude (`claude-opus-5-5`).
 
 Compose runs three containers from one image: `postgres`, `api` (Fastify, which also serves the UI) and `worker` (the generation pipeline). Uploaded and generated files live in the `storage` volume.
 
@@ -53,7 +53,7 @@ React SPA ──REST (polling)──▶ Fastify API ──insert job + enqueue (
 1. **The API never does heavy work.** It validates the request, saves the job and queues it in the same database transaction, then answers `202 { jobId }`.
 2. **The worker runs the pipeline** in five steps. Each step saves its result (a checkpoint) before the next starts, so a retry resumes from the last finished step:
    - **ingesting:** (URL jobs only; image jobs are created with their product already set) fetch the page through the SSRF guard, extract the product (JSON-LD → microdata → OpenGraph → HTML) and download up to 4 product images.
-   - **analyzing / scripting:** the content provider writes the hook, scenes, call to action, caption and hashtags. The mock is used today.
+   - **analyzing / scripting:** the content provider writes the hook, scenes, call to action, caption and hashtags. Claude when `ANTHROPIC_API_KEY` is set (vision on the product images, structured JSON output), otherwise the mock.
    - **rendering:** sharp draws each scene (gradient background, product card, text inside the platform safe zone). FFmpeg animates and crossfades the scenes into H.264/AAC MP4, or a PNG for image formats.
    - **finalizing:** each output is checked with ffprobe against its format's dimensions, codec and duration.
 3. **The UI polls** `GET /api/jobs/:id` every 1.5s, showing the step timeline and an activity log. Once done, it shows a preview at the true aspect ratio with a toggle that shades where the platform's own UI covers the content.
@@ -89,7 +89,7 @@ Durations are product defaults for short product videos, not platform maximums. 
 | Queue | pg-boss on Postgres | Retries, backoff and heartbeats without running Redis; job row and queue entry commit together |
 | Database | Postgres 16 + Drizzle | Typed queries, SQL migrations that run automatically on start |
 | Rendering | FFmpeg + sharp | Standard, fast, scriptable. Text is laid out in SVG for real typography |
-| Content | `ContentProvider` interface, mock by default | Runs with no keys; Claude plugs in behind the same interface |
+| Content | `ContentProvider` interface: Claude (`@anthropic-ai/sdk`) or mock | Runs with no keys; with a key, Claude writes the copy through the same interface |
 | Storage | `StorageProvider` interface, local disk | No extra service locally; an S3/R2 adapter is the production path |
 
 One npm workspaces monorepo: `apps/web` (UI), `apps/backend` (API and worker: one codebase, two entry points), and `packages/shared` (Zod schemas and the format registry, used by both).
@@ -102,7 +102,8 @@ All configuration is environment variables, validated at startup ([apps/backend/
 |---|---|---|
 | `APP_SECRET` | required | 32+ characters. Signs session cookies and file URLs |
 | `DATABASE_URL` | required | Compose sets it for the containers |
-| `ANTHROPIC_API_KEY` | empty | Empty = mock content generator |
+| `ANTHROPIC_API_KEY` | empty | Empty = mock content generator; set = Claude |
+| `ANTHROPIC_MODEL` | `claude-opus-5-5` | Model used for analysis and scripts |
 | `WORKER_CONCURRENCY` | `2` | Parallel jobs per worker (rendering is CPU-heavy) |
 | `STORAGE_DIR` | `./data/storage` | Where uploads and outputs are written |
 
@@ -122,7 +123,7 @@ All configuration is environment variables, validated at startup ([apps/backend/
 
 Full list in [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). The main ones:
 
-- **Script writing is simulated.** The mock builds copy from the page text. The Claude provider is not built yet.
+- **Script writing is simulated unless you add an API key.** The Claude provider is built and unit-tested, but has not yet been run against the live API.
 - **Inputs:** product URL and image upload work. Video upload is not built yet.
 - **Many big stores block automated access (403/429).** The scraper identifies itself honestly and does not try to get around bot protection (ADR-003). Those sites fail with a clear message pointing to image upload.
 - **No background music.** Videos carry a silent audio track.
