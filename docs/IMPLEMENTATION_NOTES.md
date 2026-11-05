@@ -21,6 +21,8 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | Music / voiceover | **Not built** | Videos have a silent AAC track (platforms expect an audio stream) |
 | Hosted deployment | **Not built** | Deferred (ADR-002). The Docker image and Compose stack are what would ship |
 
+**Decision for this submission:** the demo and the default setup use the mock provider, with no API key. The brief allows a simulated generation flow; everything except the copywriting is real. The Claude provider is in the code and switches on by adding `ANTHROPIC_API_KEY` to `.env`.
+
 ## Known issues
 
 - **Live Claude calls are untested.** The provider's request shape, output validation and error mapping are covered by tests with a stubbed client; the first real run needs an API key.
