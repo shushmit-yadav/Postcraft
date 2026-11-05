@@ -55,6 +55,7 @@ React SPA ──REST (polling)──▶ Fastify API ──insert job + enqueue (
    - **ingesting:** (URL jobs only; image jobs are created with their product already set) fetch the page through the SSRF guard, extract the product (JSON-LD → microdata → OpenGraph → HTML) and download up to 4 product images.
    - **analyzing / scripting:** the content provider writes the hook, scenes, call to action, caption and hashtags. Claude when `ANTHROPIC_API_KEY` is set (vision on the product images, structured JSON output), otherwise the mock.
    - **rendering:** sharp draws each scene (gradient background, product card, text inside the platform safe zone). FFmpeg animates and crossfades the scenes into H.264/AAC MP4, or a PNG for image formats.
+   - Optional **voiceover**: an offline voice reads the hook, scenes and CTA, mixed into the audio track; scenes stretch to fit their line.
    - **finalizing:** each output is checked with ffprobe against its format's dimensions, codec and duration.
 3. **The UI polls** `GET /api/jobs/:id` every 1.5s, showing the step timeline and an activity log. Once done, it shows a preview at the true aspect ratio with a toggle that shades where the platform's own UI covers the content.
 
@@ -126,5 +127,5 @@ Full list in [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). The m
 - **Script writing is simulated unless you add an API key.** The Claude provider is built and unit-tested, but has not yet been run against the live API.
 - **Inputs:** product URL and image upload work. Video upload is not built yet.
 - **Many big stores block automated access (403/429).** The scraper identifies itself honestly and does not try to get around bot protection (ADR-003). Those sites fail with a clear message pointing to image upload.
-- **No background music.** Videos carry a silent audio track.
+- **Voiceover is optional and robotic.** A free offline voice (FFmpeg's `flite`) reads the script when you tick Voiceover. There is no background music.
 - **Not hosted anywhere yet** (ADR-002). Run it locally with Docker.

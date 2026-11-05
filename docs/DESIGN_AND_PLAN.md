@@ -20,6 +20,7 @@ This document is the design and plan. What is actually built today:
 | Artifact cleanup after 7 days | ❌ Not built (files are kept) |
 | GitHub Actions CI (typecheck, tests incl. FFmpeg render integration test, build) | ✅ Built, green |
 | ESLint, Playwright E2E | ❌ Not built |
+| Offline voiceover (FFmpeg `flite`), optional per job | ✅ Built; integration test checks the audio is audible |
 | Hosted deployment | ⏸ Deferred (ADR-002) |
 
 See [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) for real vs simulated, known issues and next steps.

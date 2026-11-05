@@ -18,12 +18,15 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | Image upload | **Real** | `POST /api/uploads`: 15 MB cap, magic bytes, 300px minimum, re-encode, owned by the session. The user adds the product name and optional features |
 | Video upload | **Not built** | |
 | Script review/edit before render | **Partly built** | The runner can pause at `awaiting_review`; the API routes and UI to edit and resume are not built |
-| Music / voiceover | **Not built** | Videos have a silent AAC track (platforms expect an audio stream) |
+| Voiceover | **Real, offline** | Optional per job (video formats). FFmpeg's built-in `flite` voice reads the hook, scenes and CTA; each scene stretches to fit its line. No key or network needed. The voice sounds robotic |
+| Background music | **Not built** | Videos without voiceover carry a silent AAC track (platforms expect an audio stream) |
 | Hosted deployment | **Not built** | Deferred (ADR-002). The Docker image and Compose stack are what would ship |
 
 **Decision for this submission:** the demo and the default setup use the mock provider, with no API key. The brief allows a simulated generation flow; everything except the copywriting is real. The Claude provider is in the code and switches on by adding `ANTHROPIC_API_KEY` to `.env`.
 
 ## Known issues
+
+- **The offline voice sounds robotic.** `flite` is a classic synthesizer chosen because it ships inside FFmpeg (no key, no download). Voiced videos run 1–2s longer because scenes stretch to fit speech.
 
 - **Live Claude calls are untested.** The provider's request shape, output validation and error mapping are covered by tests with a stubbed client; the first real run needs an API key.
 - **Generic copy from the mock.** Pages without short description sentences get generic scene lines ("Built for every day"), and category guessing is keyword-based ("product" when unsure). A real model is the fix.
@@ -64,7 +67,7 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 
 - **Brand kits** (logo, colors, fonts) applied to every template: the biggest jump in perceived quality.
 - **Variants:** three hooks/templates per job, then learn which perform best.
-- **Voiceover and word-timed captions**, since most short-form video is watched muted with captions.
+- **A natural voice and word-timed captions:** swap the offline `flite` voice for Piper (local neural TTS) or a hosted voice, and time captions to the words, since most short-form video is watched muted.
 - **Richer templates with Remotion:** describe scenes as React components (animated text, transitions, brand layouts) instead of hand-built FFmpeg filter graphs. It still encodes with FFmpeg, so the format checks stay the same.
 - **AI-generated footage and AI voiceover on top of the current pipeline:** an AI video model (e.g. Runway, Veo) for short generated clips, and text-to-speech reading the script. Both become extra inputs to the same render and verify steps; FFmpeg stays responsible for exact sizes, durations and encoding.
 - **Official data sources** (Shopify Storefront API, merchant product feeds) in place of scraping.
