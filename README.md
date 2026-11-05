@@ -5,6 +5,16 @@ Turn a product page or photo into social-media-ready content. Paste a product UR
 - **Design and plan:** [docs/DESIGN_AND_PLAN.md](docs/DESIGN_AND_PLAN.md), with the decision records (ADR-001 to ADR-003)
 - **What's real, simulated, known issues and next steps:** [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md)
 
+## Run it in GitHub Codespaces (no install)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/shushmit-yadav/Postcraft?quickstart=1)
+
+1. Click the badge and create the codespace (default 2-core machine; it uses your free Codespaces hours).
+2. Wait for the first build, about 5 minutes. The stack starts by itself (`.devcontainer/`): it creates `.env` with a random secret and runs `docker compose up`.
+3. Open the **Ports** tab and open port **8080** (labelled *Postcraft*). Click an example URL and press **Generate**.
+
+To share your running app with someone else, right-click port 8080 → **Port Visibility → Public** and send the link. The link works only while the codespace is running; codespaces stop after 30 minutes of inactivity by default (raise it to 4 hours in GitHub → Settings → Codespaces).
+
 ## Quick start (Docker, one command)
 
 Requires Docker with Compose.
@@ -128,4 +138,4 @@ Full list in [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). The m
 - **Inputs:** product URL and image upload work. Video upload is not built yet.
 - **Many big stores block automated access (403/429).** The scraper identifies itself honestly and does not try to get around bot protection (ADR-003). Those sites fail with a clear message pointing to image upload.
 - **Voiceover is optional and robotic.** A free offline voice (FFmpeg's `flite`) reads the script when you tick Voiceover. There is no background music.
-- **Not hosted anywhere yet** (ADR-002). Run it locally with Docker.
+- **Hosting is on demand, not always-on.** It runs in GitHub Codespaces (badge above) or locally with Docker; a shared Codespaces link works only while that codespace is running (ADR-002).

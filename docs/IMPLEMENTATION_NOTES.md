@@ -20,7 +20,7 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | Script review/edit before render | **Partly built** | The runner can pause at `awaiting_review`; the API routes and UI to edit and resume are not built |
 | Voiceover | **Real, offline** | Optional per job (video formats). FFmpeg's built-in `flite` voice reads the hook, scenes and CTA; each scene stretches to fit its line. No key or network needed. The voice sounds robotic |
 | Background music | **Not built** | Videos without voiceover carry a silent AAC track (platforms expect an audio stream) |
-| Hosted deployment | **Not built** | Deferred (ADR-002). The Docker image and Compose stack are what would ship |
+| Hosted deployment | **Real, on demand** | GitHub Codespaces runs the Docker stack from `.devcontainer/` (README badge). Not always-on: a codespace stops after idle time, so a shared link works only while it runs (ADR-002) |
 
 **Decision for this submission:** the demo and the default setup use the mock provider, with no API key. The brief allows a simulated generation flow; everything except the copywriting is real. The Claude provider is in the code and switches on by adding `ANTHROPIC_API_KEY` to `.env`.
 

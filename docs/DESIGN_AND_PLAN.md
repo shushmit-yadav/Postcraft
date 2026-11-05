@@ -21,7 +21,7 @@ This document is the design and plan. What is actually built today:
 | GitHub Actions CI (typecheck, tests incl. FFmpeg render integration test, build) | ✅ Built, green |
 | ESLint, Playwright E2E | ❌ Not built |
 | Offline voiceover (FFmpeg `flite`), optional per job | ✅ Built; integration test checks the audio is audible |
-| Hosted deployment | ⏸ Deferred (ADR-002) |
+| Hosted deployment | ✅ GitHub Codespaces via `.devcontainer/` (ADR-002); not always-on |
 
 See [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) for real vs simulated, known issues and next steps.
 
@@ -89,7 +89,7 @@ The evaluators say it outright: *"We are not looking for the maximum number of f
 
 ### ADR-002: Deployment deferred; build local-first, deploy-ready
 
-- **Status:** decision deferred. Revisit once the app is feature complete.
+- **Status:** decided (2026-11-05): GitHub Codespaces for the review window (see the update at the end of this ADR).
 - **Context:** the brief lists a live URL as a deliverable and evaluates production deployment. The current plan is to run locally, record a demo video and publish the code on GitHub. Hosting can be added later in the review window if needed.
 - **Decision for now:** build so that deploying is a configuration change, not a rewrite:
   - The whole stack runs with **`docker compose up`** (Postgres + backend + web). The same images are what would ship to production.
@@ -100,6 +100,9 @@ The evaluators say it outright: *"We are not looking for the maximum number of f
   1. **Railway/Render** for the backend (API + worker as two services from one image) plus managed Postgres, R2 for files. Roughly $5–10 for the review window. Gives reviewers a live URL.
   2. **Single VM** (e.g. a small Hetzner/DigitalOcean box) running the same `docker compose` with Caddy for HTTPS. Cheapest, closest to local.
   3. **Not hosted:** strong README, one-command setup, demo video, and an explicit note in the implementation notes on why it isn't hosted and how it would deploy.
+- **Update, decision:** **GitHub Codespaces**. A dev container (`.devcontainer/`) builds and starts the same Docker stack automatically. Reviewers launch their own codespace from the README badge (their free quota, no setup), and the author can share a public port 8080 link during a live review. Chosen because it is free, needs no card, and runs the exact production image.
+  - **Limits accepted:** a codespace stops after at most 4 hours without editor activity (HTTP traffic doesn't count), so a shared link is not permanent; the free 2-core allowance is about 60 hours a month.
+  - **Upgrade path:** an always-on VM (e.g. Oracle Always Free, or a small paid VPS) running the same `docker compose up` behind HTTPS.
 - **Risk if we stay on option 3:** reviewers checking against the deliverables list may mark down "live URL" and "production deployment". This is mitigated by the deploy-ready setup and by stating it openly.
 
 ### ADR-003: Honest scraper identity; blocked sites fall back to image upload
