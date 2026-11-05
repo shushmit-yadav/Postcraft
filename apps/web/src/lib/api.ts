@@ -49,6 +49,11 @@ export const api = {
       body: JSON.stringify(input),
       headers: { 'idempotency-key': idempotencyKey },
     }),
+  uploadImage: (file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return request<{ assetId: string; width: number; height: number }>('/uploads', { method: 'POST', body });
+  },
   getJob: (id: string) => request<JobView>(`/jobs/${id}`),
   retryJob: (id: string) => request<{ jobId: string }>(`/jobs/${id}/retry`, { method: 'POST' }),
   cancelJob: (id: string) => request<{ jobId: string }>(`/jobs/${id}/cancel`, { method: 'POST' }),

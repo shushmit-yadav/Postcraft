@@ -51,7 +51,13 @@ export const CreateJobSchema = z
       inputType: z.literal('url'),
       url: z.url({ protocol: /^https?$/ }).max(2048),
     }),
-    z.object({ inputType: z.literal('image'), assetId: z.uuid() }),
+    z.object({
+      inputType: z.literal('image'),
+      assetId: z.uuid(),
+      // An image carries no product facts, so the user supplies them.
+      productName: z.string().trim().min(2).max(80),
+      description: z.string().trim().max(600).optional(),
+    }),
     z.object({ inputType: z.literal('video'), assetId: z.uuid() }),
   ])
   .and(

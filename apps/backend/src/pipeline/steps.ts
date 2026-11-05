@@ -46,8 +46,9 @@ export const PIPELINE: PipelineStep[] = [
     timeoutMs: 90_000,
     isDone: (job) => job.product !== null,
     async run(ctx) {
+      // Image jobs are created with their product already set, so only video reaches this.
       if (ctx.job.inputType !== 'url') {
-        throw new AppError('INPUT_NOT_SUPPORTED_YET', 'Image and video uploads are coming soon. Please use a product URL.');
+        throw new AppError('INPUT_NOT_SUPPORTED_YET', 'Video upload is coming soon. Use a product URL or an image.');
       }
       return { product: await ingestFromUrl(ctx) };
     },

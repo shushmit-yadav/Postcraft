@@ -50,6 +50,11 @@ export async function createJob(
         inputType: input.inputType,
         inputUrl: input.inputType === 'url' ? input.url : null,
         inputAssetId: input.inputType === 'url' ? null : input.assetId,
+        // Image jobs already know their product, so the ingest step's checkpoint is done at creation.
+        product:
+          input.inputType === 'image'
+            ? { title: input.productName, description: input.description || undefined, imageAssetIds: [input.assetId] }
+            : null,
         platform: input.platform,
         formatId: input.formatId,
         options: input.options,

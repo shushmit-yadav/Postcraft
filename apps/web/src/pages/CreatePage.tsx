@@ -13,6 +13,7 @@ import {
 } from '@app/shared';
 import { api, ApiError } from '../lib/api';
 import { AspectBox, Button, Card, SectionTitle } from '../components/ui';
+import { ImageInput } from '../components/ImageInput';
 
 const PLATFORM_LABELS: Record<Platform, string> = {
   instagram: 'Instagram',
@@ -22,7 +23,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 
 const INPUT_TABS: { id: InputType; label: string; icon: typeof Link2; available: boolean }[] = [
   { id: 'url', label: 'Product URL', icon: Link2, available: true },
-  { id: 'image', label: 'Image', icon: ImageIcon, available: false },
+  { id: 'image', label: 'Image', icon: ImageIcon, available: true },
   { id: 'video', label: 'Video', icon: Video, available: false },
 ];
 
@@ -38,6 +39,9 @@ export function CreatePage() {
   const navigate = useNavigate();
   const [inputType, setInputType] = useState<InputType>('url');
   const [url, setUrl] = useState('');
+  const [assetId, setAssetId] = useState<string | null>(null);
+  const [productName, setProductName] = useState('');
+  const [description, setDescription] = useState('');
   const [platform, setPlatform] = useState<Platform>('instagram');
   const [formatId, setFormatId] = useState<FormatId>('ig_reel');
   const [tone, setTone] = useState<Tone>('energetic');
@@ -51,8 +55,9 @@ export function CreatePage() {
     mutationFn: () =>
       api.createJob(
         {
-          inputType: 'url',
-          url: url.trim(),
+          ...(inputType === 'image'
+            ? { inputType: 'image' as const, assetId: assetId!, productName: productName.trim(), description: description.trim() || undefined }
+            : { inputType: 'url' as const, url: url.trim() }),
           platform,
           formatId,
           options: { tone, reviewBeforeRender: false },
@@ -76,7 +81,9 @@ export function CreatePage() {
   }
 
   const urlError = url && !isHttpUrl(url) ? 'Enter a full link starting with http:// or https://' : null;
-  const canSubmit = inputType === 'url' && isHttpUrl(url) && !create.isPending;
+  const inputReady =
+    inputType === 'url' ? isHttpUrl(url) : inputType === 'image' && !!assetId && productName.trim().length >= 2;
+  const canSubmit = inputReady && !create.isPending;
 
   return (
     <div>
@@ -110,6 +117,40 @@ export function CreatePage() {
               </button>
             ))}
           </div>
+
+          {inputType === 'image' && (
+            <div className="grid gap-3">
+              <ImageInput onAsset={setAssetId} />
+              <div>
+                <label htmlFor="productName" className="mb-1 block text-sm text-slate-700">
+                  Product name
+                </label>
+                <input
+                  id="productName"
+                  required
+                  maxLength={80}
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="e.g. Sunrise Ceramic Mug"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
+              <div>
+                <label htmlFor="description" className="mb-1 block text-sm text-slate-700">
+                  Key features <span className="text-slate-400">(optional, one short sentence each)</span>
+                </label>
+                <textarea
+                  id="description"
+                  rows={3}
+                  maxLength={600}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Keeps coffee hot for six hours. Dishwasher safe."
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
+            </div>
+          )}
 
           {inputType === 'url' && (
             <div>

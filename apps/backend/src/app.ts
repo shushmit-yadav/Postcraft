@@ -3,6 +3,7 @@ import path from 'node:path';
 import Fastify, { type FastifyError } from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import {
@@ -19,6 +20,7 @@ import { jobRoutes } from './routes/jobs.js';
 import { formatRoutes } from './routes/formats.js';
 import { fileRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
+import { uploadRoutes } from './routes/uploads.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -45,6 +47,7 @@ export async function buildApp() {
   });
   await app.register(cookie, { secret: config.APP_SECRET });
   await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  await app.register(multipart);
   await app.register(sessionPlugin);
 
   app.setErrorHandler((err: FastifyError, req, reply) => {
@@ -74,6 +77,7 @@ export async function buildApp() {
       await api.register(formatRoutes);
       await api.register(jobRoutes);
       await api.register(fileRoutes);
+      await api.register(uploadRoutes);
       api.setNotFoundHandler((_req, reply) =>
         reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found' } }),
       );
