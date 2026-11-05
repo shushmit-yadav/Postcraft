@@ -115,6 +115,7 @@ export const PIPELINE: PipelineStep[] = [
             heroIndex: job.analysis?.heroImageIndex ?? 0,
             imagePaths,
             workDir,
+            voiceover: job.options.voiceover === true, // older jobs predate the option
             signal,
             onProgress: progress,
           });

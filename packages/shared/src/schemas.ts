@@ -41,6 +41,8 @@ export const JobOptionsSchema = z.object({
   tone: ToneSchema.default('energetic'),
   /** Pause after the script is written so the user can edit it before rendering. */
   reviewBeforeRender: z.boolean().default(false),
+  /** Speak the script over the video with an offline voice (video formats only). */
+  voiceover: z.boolean().default(false),
 });
 export type JobOptions = z.infer<typeof JobOptionsSchema>;
 
@@ -64,7 +66,7 @@ export const CreateJobSchema = z
     z.object({
       platform: PlatformSchema,
       formatId: FormatIdSchema,
-      options: JobOptionsSchema.default({ tone: 'energetic', reviewBeforeRender: false }),
+      options: JobOptionsSchema.default({ tone: 'energetic', reviewBeforeRender: false, voiceover: false }),
     }),
   )
   .refine((v) => FORMATS[v.formatId].platform === v.platform, {

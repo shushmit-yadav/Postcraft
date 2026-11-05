@@ -4,10 +4,13 @@ import sharp from 'sharp';
 import type { Script, VideoFormat } from '@app/shared';
 import { captionLayer, cardZone, ctaLayer, introLayer, renderBase, titleLayer, toSvg, type Layer } from './frames.js';
 import { runFfmpeg } from './ffmpeg.js';
+import { synthesizeSpeech } from './voice.js';
 
 export const INTRO_SECONDS = 2.6;
 export const OUTRO_SECONDS = 3;
 const XFADE_SECONDS = 0.4;
+/** Pause before each spoken line, so speech starts after the text has faded in. */
+const SPEECH_LEAD = 0.3;
 /** Base frames are rendered slightly larger than the output so they can slowly pan. */
 const PAN_MARGIN_X = 1.08;
 const PAN_MARGIN_Y = 1.02;
@@ -21,6 +24,8 @@ export interface VideoRenderInput {
   heroIndex: number;
   imagePaths: string[];
   workDir: string;
+  /** Speak the hook, scenes and CTA with an offline voice. */
+  voiceover?: boolean;
   signal: AbortSignal;
   onProgress: (fraction: number) => Promise<void> | void;
 }
@@ -29,6 +34,8 @@ interface Segment {
   imageIndex: number;
   layers: Layer[];
   duration: number;
+  /** What the voiceover says during this segment. */
+  speech: string;
 }
 
 const even = (n: number) => Math.round(n / 2) * 2;
@@ -44,17 +51,23 @@ export async function renderVideo(input: VideoRenderInput) {
   const hero = input.heroIndex % n;
 
   const segments: Segment[] = [
-    { imageIndex: hero, layers: [introLayer(format, script.hook, input.brand)], duration: INTRO_SECONDS },
-    ...script.scenes.map((s) => ({ imageIndex: s.imageIndex % n, layers: [captionLayer(format, s.text)], duration: s.durationSec })),
+    { imageIndex: hero, layers: [introLayer(format, script.hook, input.brand)], duration: INTRO_SECONDS, speech: script.hook },
+    ...script.scenes.map((s) => ({ imageIndex: s.imageIndex % n, layers: [captionLayer(format, s.text)], duration: s.durationSec, speech: s.text })),
     {
       imageIndex: hero,
       layers: [titleLayer(format, input.title), ctaLayer(format, script.cta, input.price)],
       duration: OUTRO_SECONDS,
+      speech: `${input.title}. ${script.cta}.`,
     },
   ];
   // One card zone for the whole video (measured from the real text), so the product
   // card never jumps between scenes and never sits under any text.
   const zone = cardZone(format, segments.flatMap((s) => s.layers));
+  // Voiceover: each segment lasts at least as long as its spoken line (plus a short pause).
+  const speech = input.voiceover
+    ? await Promise.all(segments.map((seg, i) => synthesizeSpeech(seg.speech, workDir, `voice-${i}`, signal)))
+    : [];
+  speech.forEach((v, i) => (segments[i]!.duration = Math.max(segments[i]!.duration, v.durationSec + SPEECH_LEAD + 0.4)));
   fitToMaxDuration(segments, format.maxSeconds);
   const total = segments.reduce((sum, s) => sum + s.duration, 0) - XFADE_SECONDS * (segments.length - 1);
 
@@ -95,6 +108,7 @@ export async function renderVideo(input: VideoRenderInput) {
   });
   const audioIndex = segments.length * 2;
   args.push('-f', 'lavfi', '-t', total.toFixed(3), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100');
+  speech.forEach((v) => args.push('-protocol_whitelist', 'file', '-i', v.path));
 
   const W = format.width;
   const H = format.height;
@@ -120,10 +134,24 @@ export async function renderVideo(input: VideoRenderInput) {
   }
   if (segments.length === 1) filters.push('[s0]null[v]');
 
+  // Audio: silence for the full length, plus each spoken line delayed to just after its segment starts.
+  let audioMap = `${audioIndex}:a`;
+  if (speech.length) {
+    let start = 0;
+    const lines = speech.map((_, i) => {
+      const ms = Math.round((start + SPEECH_LEAD) * 1000);
+      start += segments[i]!.duration - XFADE_SECONDS;
+      filters.push(`[${audioIndex + 1 + i}:a]adelay=${ms}:all=1[vo${i}]`);
+      return `[vo${i}]`;
+    });
+    filters.push(`[${audioIndex}:a]${lines.join('')}amix=inputs=${lines.length + 1}:normalize=0:duration=first[a]`);
+    audioMap = '[a]';
+  }
+
   const outputPath = path.join(workDir, 'output.mp4');
   args.push(
     '-filter_complex', filters.join(';'),
-    '-map', '[v]', '-map', `${audioIndex}:a`,
+    '-map', '[v]', '-map', audioMap,
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-profile:v', 'high', '-pix_fmt', 'yuv420p',
     '-r', String(format.fps), '-g', String(format.fps * 2),
     '-c:a', 'aac', '-b:a', '128k',

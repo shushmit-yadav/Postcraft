@@ -45,6 +45,7 @@ export function CreatePage() {
   const [platform, setPlatform] = useState<Platform>('instagram');
   const [formatId, setFormatId] = useState<FormatId>('ig_reel');
   const [tone, setTone] = useState<Tone>('energetic');
+  const [voiceover, setVoiceover] = useState(false);
   // One key per form submission: double clicks or network retries never create two jobs.
   const idempotencyKey = useRef(crypto.randomUUID());
 
@@ -60,7 +61,7 @@ export function CreatePage() {
             : { inputType: 'url' as const, url: url.trim() }),
           platform,
           formatId,
-          options: { tone, reviewBeforeRender: false },
+          options: { tone, reviewBeforeRender: false, voiceover: voiceover && FORMATS[formatId].kind === 'video' },
         },
         idempotencyKey.current,
       ),
@@ -258,6 +259,23 @@ export function CreatePage() {
               </button>
             ))}
           </div>
+          {FORMATS[formatId].kind === 'video' && (
+            <label className="mt-4 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={voiceover}
+                onChange={(e) => setVoiceover(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-brand-600"
+              />
+              <span>
+                Voiceover
+                <span className="block text-xs text-slate-500">
+                  Reads the hook, scenes and call to action aloud with a free offline voice (sounds robotic). Makes
+                  the video a little longer.
+                </span>
+              </span>
+            </label>
+          )}
         </Card>
 
         {create.error && (

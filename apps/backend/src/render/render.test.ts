@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -40,6 +41,18 @@ describe('rendered output meets platform format rules', () => {
     expect(Math.abs(p.durationSec! - out.durationSec)).toBeLessThan(0.2);
   }, 120_000);
 
+  it('voiceover: the audio track is audible and the video stretches to fit the speech', async () => {
+    const opts = { format: FORMATS.tt_video, script, title: 'Sunrise Mug', heroIndex: 0, imagePaths: [photo], signal: AbortSignal.timeout(120_000), onProgress: () => {} };
+    const silentDir = await fs.mkdtemp(path.join(dir, 'silent-'));
+    const voicedDir = await fs.mkdtemp(path.join(dir, 'voiced-'));
+    const silent = await renderVideo({ ...opts, workDir: silentDir });
+    const voiced = await renderVideo({ ...opts, workDir: voicedDir, voiceover: true });
+    expect(maxVolumeDb(silent.outputPath)).toBeLessThan(-80);
+    expect(maxVolumeDb(voiced.outputPath)).toBeGreaterThan(-30);
+    expect(voiced.durationSec).toBeGreaterThan(silent.durationSec);
+    expect((await probe(voiced.outputPath)).durationSec!).toBeLessThanOrEqual(FORMATS.tt_video.maxSeconds);
+  }, 180_000);
+
   it.each(['ig_feed', 'yt_thumb'] as const)('%s: PNG at exact size', async (id) => {
     const f = FORMATS[id];
     const { outputPath } = await renderImage({ format: f, script, heroPath: photo, workDir: dir, price: '$24.00' });
@@ -47,3 +60,11 @@ describe('rendered output meets platform format rules', () => {
     expect([m.format, m.width, m.height]).toEqual(['png', f.width, f.height]);
   }, 60_000);
 });
+
+/** Peak loudness of a file's audio in dB (-91 = digital silence). */
+function maxVolumeDb(file: string): number {
+  const { stderr } = spawnSync('ffmpeg', ['-hide_banner', '-i', file, '-af', 'volumedetect', '-vn', '-f', 'null', '-'], { encoding: 'utf8' });
+  const m = /max_volume: (-?[\d.]+|-inf) dB/.exec(stderr);
+  if (!m) throw new Error(`no volumedetect output for ${file}`);
+  return m[1] === '-inf' ? -Infinity : Number(m[1]);
+}
