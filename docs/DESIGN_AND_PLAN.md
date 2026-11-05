@@ -18,7 +18,8 @@ This document is the design and plan. What is actually built today:
 | Video upload | ❌ Not built yet |
 | Review/edit script before render | ⚠️ Backend pause exists; API routes and UI not built |
 | Artifact cleanup after 7 days | ❌ Not built (files are kept) |
-| ESLint, GitHub Actions CI, Playwright E2E | ❌ Not built (Vitest + `tsc` only) |
+| GitHub Actions CI (typecheck, tests incl. FFmpeg render integration test, build) | ✅ Built, green |
+| ESLint, Playwright E2E | ❌ Not built |
 | Hosted deployment | ⏸ Deferred (ADR-002) |
 
 See [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) for real vs simulated, known issues and next steps.

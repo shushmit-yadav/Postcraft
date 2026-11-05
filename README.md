@@ -35,7 +35,7 @@ Stop the full Compose stack first (`docker compose stop api worker`) if it is ru
 
 | Command | What it does |
 |---|---|
-| `npm test` | Unit tests (format rules, SSRF guard, product parser, text layout, card layout) |
+| `npm test` | Unit tests (format rules, SSRF guard, product parser, text and card layout) and a render integration test that checks real FFmpeg output against the format rules. CI runs these on every push |
 | `npm run typecheck` | TypeScript across all packages |
 | `npm run build` | Production builds (backend bundle + UI) |
 | `npm run render:sample -w @app/backend` | Renders every format from a sample image, without the database. Useful for tuning layouts and timing renders |

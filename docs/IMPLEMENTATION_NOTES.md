@@ -32,8 +32,8 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 - **Anonymous sessions.** Jobs belong to a browser cookie (30 days). Clearing cookies or switching browsers loses access to past jobs.
 - **Crash recovery takes ~35s.** This is the pg-boss heartbeat window (15s) plus its supervisor interval (10s) plus a retry delay. The UI shows the step as still running during that time.
 - **Render time:** a 13s 1080×1920 video takes about 13–28s on a laptop CPU, depending on load.
-- **Not tested:** graceful worker shutdown on SIGTERM (it is implemented); a full pipeline integration test in CI (the pipeline was tested by hand, through both the dev setup and the Docker stack).
-- **No CI and no ESLint yet.** Checks are Vitest + `tsc`.
+- **Not tested:** graceful worker shutdown on SIGTERM (it is implemented). The render step is covered by an integration test in CI; the full pipeline with the database and queue was tested by hand (dev setup and Docker stack).
+- **No ESLint yet.** CI (GitHub Actions) runs `tsc`, Vitest and the production build on every push.
 
 ## Trade-offs I made
 
@@ -53,9 +53,8 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 
 1. **Claude content provider** (vision + structured JSON validated by the existing `ScriptSchema`), with the mock kept as the fallback when the key is missing or the API is down.
 2. **Review step UI:** edit hook, scenes and CTA, then render. The pause already exists in the runner.
-3. **Pipeline integration test + CI:** render a fixture image for each format and assert the ffprobe output, on every push.
-4. **Retention job** that deletes files and rows after 7 days.
-5. **Video upload:** trim, reframe to 9:16, burn in captions.
+3. **Retention job** that deletes files and rows after 7 days.
+4. **Video upload:** trim, reframe to 9:16, burn in captions.
 
 ## How the product could evolve
 
