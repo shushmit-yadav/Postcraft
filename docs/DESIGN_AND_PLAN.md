@@ -9,12 +9,13 @@ This document is the design and plan. What is actually built today:
 | Area | Status |
 |---|---|
 | URL input → scrape → script → render → verify → preview/download | ✅ Built and tested end to end |
+| Image upload input (photo + product name + optional features) | ✅ Built and tested end to end |
 | All 6 formats (Reel, Story, TikTok, Short as MP4; Feed post, YouTube thumbnail as PNG) | ✅ Built; every output verified with ffprobe/sharp |
 | Job queue, checkpoints, retries, cancel, crash recovery, stalled-job sweeper | ✅ Built and tested (incl. `kill -9` of the worker mid-render) |
 | SSRF guard, signed file URLs, session scoping, rate limits | ✅ Built; unit tested |
 | Docker image + full `docker compose up` | ✅ Built and tested |
 | Content provider | ⚠️ Mock only (simulated). Claude provider not built yet |
-| Image upload, video upload | ❌ Not built yet |
+| Video upload | ❌ Not built yet |
 | Review/edit script before render | ⚠️ Backend pause exists; API routes and UI not built |
 | Artifact cleanup after 7 days | ❌ Not built (files are kept) |
 | ESLint, GitHub Actions CI, Playwright E2E | ❌ Not built (Vitest + `tsc` only) |
@@ -213,7 +214,7 @@ export const FORMATS = {
 ## 6. API surface
 
 ```
-POST  /api/uploads              → (planned) multipart upload (streamed, size-capped, magic-byte checked) → { assetId }
+POST  /api/uploads              → multipart upload (streamed, size-capped, magic-byte checked) → { assetId }
 POST  /api/jobs                 → 202 { jobId }   body: { inputType, url|assetId, platform, formatId, options }
 GET   /api/jobs/:id             → job + events + script + outputs (signed URLs)   ← polled by the UI
 PATCH /api/jobs/:id/script      → (planned) edit script (only while awaiting_review)
@@ -234,7 +235,7 @@ All request and response bodies are Zod-validated. An **Idempotency-Key** header
 | Risk | Mitigation |
 |---|---|
 | **SSRF via product URL** | http/https only; resolve DNS and **block private, loopback, link-local and metadata IPs** (169.254.169.254, IPv6 equivalents, decimal/octal-encoded IPs), re-checked on every redirect (stops DNS rebinding); max 3 redirects; 15s timeout; 5MB HTML cap. Image downloads go through the same guard |
-| **Malicious uploads** (uploads planned; the same image checks already run on scraped images) | Streamed multipart with hard size limits (image 15MB, video 100MB); server verifies **magic bytes** (not the client's MIME type) and probes with sharp/ffprobe; outputs are always re-encoded; random storage keys, never user-supplied filenames |
+| **Malicious uploads** | Streamed multipart with hard size limits (image 15MB, video 100MB); server verifies **magic bytes** (not the client's MIME type) and probes with sharp/ffprobe; outputs are always re-encoded; random storage keys, never user-supplied filenames |
 | **FFmpeg as attack surface** | Fixed argument arrays via `spawn` (no shell), `-protocol_whitelist file`, per-render timeout, worker runs as non-root in its container |
 | **Prompt injection from scraped pages** | Scraped content is delimited and treated as data; output is schema-validated; the model gets no tools or actions |
 | **Abuse / cost** | Anonymous signed session cookie owns jobs; **rate limits** per session and IP; max concurrent jobs per session |

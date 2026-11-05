@@ -15,7 +15,8 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 | Format verification | **Real** | Every output is checked with ffprobe/sharp (size, codec, pixel format, duration) before the job completes |
 | Queue, persistence, retries, crash recovery | **Real** | Postgres + pg-boss. Tested by killing the worker with `kill -9` mid-render; the job resumed at the render step |
 | Storage | **Real, local disk** | Behind a `StorageProvider` interface; an S3/R2 adapter is not written |
-| Image / video upload | **Not built** | Planned next. It is also the fallback when a store blocks scraping |
+| Image upload | **Real** | `POST /api/uploads`: 15 MB cap, magic bytes, 300px minimum, re-encode, owned by the session. The user adds the product name and optional features |
+| Video upload | **Not built** | |
 | Script review/edit before render | **Partly built** | The runner can pause at `awaiting_review`; the API routes and UI to edit and resume are not built |
 | Music / voiceover | **Not built** | Videos have a silent AAC track (platforms expect an audio stream) |
 | Hosted deployment | **Not built** | Deferred (ADR-002). The Docker image and Compose stack are what would ship |
@@ -23,7 +24,7 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 ## Known issues
 
 - **Generic copy from the mock.** Pages without short description sentences get generic scene lines ("Built for every day"), and category guessing is keyword-based ("product" when unsure). A real model is the fix.
-- **Many large stores block the scraper** with 403/429 (bot protection). That is intentional (ADR-003): the app reports `SITE_BLOCKED` and does not get around the block. Until upload exists, those products can't be used.
+- **Many large stores block the scraper** with 403/429 (bot protection). That is intentional (ADR-003): the app reports `SITE_BLOCKED`, does not get around the block, and points the user to image upload.
 - **Text width is estimated, not measured.** The layout uses an average glyph width for DejaVu Sans Bold. Text with many wide letters can come out slightly wider than planned; panels have padding to absorb it. Emoji and non-Latin scripts are not supported in the rendered overlays (captions may still contain emoji).
 - **A small product card when captions are long.** Text zones take priority over the card, so a video with 3-line captions gets a smaller product image. Long text never overlaps the product (covered by a test).
 - **Generated files are never deleted.** There is no retention job yet.
@@ -50,12 +51,11 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 
 ## What I would improve next (in order)
 
-1. **Image upload.** Streamed multipart, the same validation as scraped images, feeding the existing pipeline from the analyze step. It covers every store that blocks scraping.
-2. **Claude content provider** (vision + structured JSON validated by the existing `ScriptSchema`), with the mock kept as the fallback when the key is missing or the API is down.
-3. **Review step UI:** edit hook, scenes and CTA, then render. The pause already exists in the runner.
-4. **Pipeline integration test + CI:** render a fixture image for each format and assert the ffprobe output, on every push.
-5. **Retention job** that deletes files and rows after 7 days.
-6. **Video upload:** trim, reframe to 9:16, burn in captions.
+1. **Claude content provider** (vision + structured JSON validated by the existing `ScriptSchema`), with the mock kept as the fallback when the key is missing or the API is down.
+2. **Review step UI:** edit hook, scenes and CTA, then render. The pause already exists in the runner.
+3. **Pipeline integration test + CI:** render a fixture image for each format and assert the ffprobe output, on every push.
+4. **Retention job** that deletes files and rows after 7 days.
+5. **Video upload:** trim, reframe to 9:16, burn in captions.
 
 ## How the product could evolve
 

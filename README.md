@@ -1,6 +1,6 @@
 # Postcraft
 
-Turn a product page into social-media-ready content. Paste a product URL, pick a platform (Instagram, TikTok or YouTube) and a format, and Postcraft generates a video or image sized to that platform's rules, with a caption and hashtags. You watch progress live, preview the result and download it.
+Turn a product page or photo into social-media-ready content. Paste a product URL (or upload a product photo with its name), pick a platform (Instagram, TikTok or YouTube) and a format, and Postcraft generates a video or image sized to that platform's rules, with a caption and hashtags. You watch progress live, preview the result and download it.
 
 - **Design and plan:** [docs/DESIGN_AND_PLAN.md](docs/DESIGN_AND_PLAN.md), with the decision records (ADR-001 to ADR-003)
 - **What's real, simulated, known issues and next steps:** [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md)
@@ -52,7 +52,7 @@ React SPA ──REST (polling)──▶ Fastify API ──insert job + enqueue (
 
 1. **The API never does heavy work.** It validates the request, saves the job and queues it in the same database transaction, then answers `202 { jobId }`.
 2. **The worker runs the pipeline** in five steps. Each step saves its result (a checkpoint) before the next starts, so a retry resumes from the last finished step:
-   - **ingesting:** fetch the page through the SSRF guard, extract the product (JSON-LD → microdata → OpenGraph → HTML) and download up to 4 product images.
+   - **ingesting:** (URL jobs only; image jobs are created with their product already set) fetch the page through the SSRF guard, extract the product (JSON-LD → microdata → OpenGraph → HTML) and download up to 4 product images.
    - **analyzing / scripting:** the content provider writes the hook, scenes, call to action, caption and hashtags. The mock is used today.
    - **rendering:** sharp draws each scene (gradient background, product card, text inside the platform safe zone). FFmpeg animates and crossfades the scenes into H.264/AAC MP4, or a PNG for image formats.
    - **finalizing:** each output is checked with ffprobe against its format's dimensions, codec and duration.
@@ -123,7 +123,7 @@ All configuration is environment variables, validated at startup ([apps/backend/
 Full list in [docs/IMPLEMENTATION_NOTES.md](docs/IMPLEMENTATION_NOTES.md). The main ones:
 
 - **Script writing is simulated.** The mock builds copy from the page text. The Claude provider is not built yet.
-- **Only URL input works.** Image and video upload are not built yet.
-- **Many big stores block automated access (403/429).** The scraper identifies itself honestly and does not try to get around bot protection (ADR-003). Those sites fail with a clear message.
+- **Inputs:** product URL and image upload work. Video upload is not built yet.
+- **Many big stores block automated access (403/429).** The scraper identifies itself honestly and does not try to get around bot protection (ADR-003). Those sites fail with a clear message pointing to image upload.
 - **No background music.** Videos carry a silent audio track.
 - **Not hosted anywhere yet** (ADR-002). Run it locally with Docker.
