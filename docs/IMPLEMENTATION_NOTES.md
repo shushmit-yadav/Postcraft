@@ -65,6 +65,8 @@ Status as of 2026-11-04. Read alongside the [README](../README.md) and [DESIGN_A
 - **Brand kits** (logo, colors, fonts) applied to every template: the biggest jump in perceived quality.
 - **Variants:** three hooks/templates per job, then learn which perform best.
 - **Voiceover and word-timed captions**, since most short-form video is watched muted with captions.
+- **Richer templates with Remotion:** describe scenes as React components (animated text, transitions, brand layouts) instead of hand-built FFmpeg filter graphs. It still encodes with FFmpeg, so the format checks stay the same.
+- **AI-generated footage and AI voiceover on top of the current pipeline:** an AI video model (e.g. Runway, Veo) for short generated clips, and text-to-speech reading the script. Both become extra inputs to the same render and verify steps; FFmpeg stays responsible for exact sizes, durations and encoding.
 - **Official data sources** (Shopify Storefront API, merchant product feeds) in place of scraping.
 - **Accounts, history and teams**, then scheduling and direct publishing through platform APIs.
 - **Scale:** S3/R2 storage, a separate render worker pool, per-job cost tracking, caching scrape and model results by URL.
