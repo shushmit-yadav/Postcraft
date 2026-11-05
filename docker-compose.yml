@@ -12,7 +12,7 @@ x-app: &app
     DATABASE_URL: postgres://app:app@postgres:5432/social_gen
     APP_SECRET: ${APP_SECRET:?Set APP_SECRET in .env (cp .env.example .env)}
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
     WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
   volumes:
     - storage:/app/data/storage # api serves files the worker writes, so they share it

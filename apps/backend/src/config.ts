@@ -16,7 +16,7 @@ const EnvSchema = z.object({
   /** Directory with the built SPA. When set, the API also serves the UI (same origin). */
   WEB_DIST_DIR: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional().transform((v) => (v ? v : undefined)),
-  ANTHROPIC_MODEL: z.string().default('claude-sonnet-5-5'),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(2),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
